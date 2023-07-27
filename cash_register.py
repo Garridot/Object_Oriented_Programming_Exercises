@@ -11,6 +11,25 @@
 
 import time
 
+class ValidateInputs: 
+    def __init__(self,option):
+        self.option = option
+
+    def check_input(self): # It will validate that the inputs only will be numeric. 
+        if self.option is None or self.option.isdigit() != True:
+           print("\nPlease enter a valid option.")
+           return False
+        else:
+            return True         
+
+    def check_range(self): # It will validate that the inputs are among the valid options.       
+        if int(self.option) not in range(1, 6) :
+            print("\nPlease enter a number within the valid options.")
+            return False
+        else:
+            return True    
+
+
 
 class Products:
 
@@ -30,11 +49,11 @@ class Products:
     
     
     # get_all_products class method allows you to retrieve the list of all added products. 
-    # cls is often used as a convention for the first parameter of a class method.It stands for "class" and is similar toself for instance methods.  
+    # cls is often used as a convention for the first parameter of a class method.It stands for "class" 
+    # and is similar toself for instance methods.  
     @classmethod
     def get_all_products(cls):   
         return cls.all_products
-
 
     def get_id(self):
         return self.__id
@@ -46,6 +65,7 @@ class Products:
         return self.__price   
 
 
+
 class CashRegister(Products):
 
     cart_list   = []
@@ -54,8 +74,8 @@ class CashRegister(Products):
     def __init__(self,product,quantity):
         self.product  = product
         self.quantity = quantity  
-        self.product_instance = None  # Variable to store the product instance if found  
-        self.total_order = None
+        self.product_instance = None  # Variable to store the product instance if found.  
+        self.total_order = None # Total sum of products in the order.
 
 
     @classmethod
@@ -63,14 +83,14 @@ class CashRegister(Products):
         return cls.cart_list
         
     @classmethod
-    def check_if_cart_not_empty(cls):
+    def check_if_cart_not_empty(cls): # Will return True in case the cart isn't empty. 
         if len(cls.get_cart()) == 0:
             print("Your cart is currently empty.")
             return False
         return True
     
     @classmethod
-    def get_cart_list(cls):
+    def get_cart_list(cls): # Will return a print of all products from the cart. Also, the function will sum the total price of the order.   
         if cls.check_if_cart_not_empty():
             total = 0            
             for product in cls.get_cart():                 
@@ -87,7 +107,7 @@ class CashRegister(Products):
 
 
     @classmethod
-    def remove_product(cls,product_id):
+    def remove_product(cls,product_id):  # Will return True if the product was found and removed from the cart.
         if  cls.check_if_cart_not_empty():
             for product in CashRegister.cart_list:
                 if product["id"] == product_id:
@@ -97,23 +117,20 @@ class CashRegister(Products):
 
 
     @classmethod
-    def payment(cls,amount):
-        print(amount, cls.cart_total)
+    def payment(cls,amount): # Will check if the amount received is equal to or higher than the total to pay. 
         if amount < cls.cart_total:
             print("Please enter a valid amount.") 
             return False       
-        elif amount > cls.cart_total:
+        elif amount > cls.cart_total: # In case it's higher than the total to pay, it'll return the correspondent change.   
             change = amount - cls.cart_total
             print("Payment successful!")             
             print(f"Your change: {change}")            
         else:
             print("Payment successful!") 
-        return True            
+        return True  
 
 
-
-
-    def check_product_exists(self):
+    def check_product_exists(self): # It will return True if the product was found.
         all_products = Products.get_all_products()
         for product in all_products:            
             if product.get_id() == self.product:                 
@@ -122,13 +139,11 @@ class CashRegister(Products):
         print("\nProduct not found.")
         return False
 
-
-    def check_stock_available(self):        
+    def check_stock_available(self): # It will return True if the quantity requested is available.      
         if self.product_instance.quantity < self.quantity:   
             print("\nThe quantity requested is not available.")             
             return False 
-        return True        
-
+        return True    
     
     def add_product_order(self): 
         if self.check_product_exists() and self.check_stock_available(): 
@@ -138,36 +153,16 @@ class CashRegister(Products):
             register["quantity"] = self.quantity   
             register["price"]    = self.product_instance.get_price()             
             register["total"]    = self.quantity * self.product_instance.get_price() 
-
             
+            # Will check if the product has already been added to the cart. If it was, it'll remove the before request and add the new one.
             if self.remove_product(register["id"]):
                 CashRegister.cart_list.append(register)
                 print("\nCart updated.") 
             else:    
                 CashRegister.cart_list.append(register)
-                print("\nNew product added.")
-                               
+                print("\nNew product added.")                               
         return True  
 
-class ValidateInputs:
-    def __init__(self,option):
-        self.option = option
-
-    def check_input(self):
-        if self.option is None or self.option.isdigit() != True:
-           print("\nPlease enter a valid option.")
-           return False
-        else:
-            return True         
-
-    def check_range(self):        
-        if int(self.option) not in range(1, 6) :
-            print("\nPlease enter a number within the valid options.")
-            return False
-        else:
-            return True    
-
-    
 
 
 products_available = [
@@ -187,10 +182,9 @@ products_available = [
 
 if __name__ == "__main__":
 
-    [Products(i["id"],i["name"],i["quantity"],i["price"]) for i in products_available] 
-    
-    print("Welcome to the Warehouse.")   
+    [Products(i["id"],i["name"],i["quantity"],i["price"]) for i in products_available]  # Adding to the Class Products the list of products available. 
 
+    print("Welcome to the Warehouse.") 
     options = [
         "\nOptions:",
         "1) View products.",
@@ -201,24 +195,22 @@ if __name__ == "__main__":
         "6) Exit the program.",
         ]
 
+
     start = True
-    while start:
-     
+    while start:     
         [print(i) for i in options]
 
-        option = input("Enter your answer:")         
-        
-        valide = ValidateInputs(option) 
+        option = input("Enter your answer:") 
+        valide = ValidateInputs(option)
 
         if valide.check_input() and valide.check_range():
             option = int(option)
 
-            if option == 1:
+            if option == 1: # Show all products.
                 print("\nList of Products:")
                 [print(i) for i in Products.get_all_products()] 
 
-
-            if option == 2: 
+            if option == 2: # Add product to the cart.
                 product  =  input("Enter the id of the product that you want:")
                 quantity =  input("Enter the amount you want to carry:")
 
@@ -227,17 +219,15 @@ if __name__ == "__main__":
 
                 if valid_product.check_input() and valid_quantity.check_input():
                     cash_register = CashRegister(int(product), int(quantity))    
-                    if cash_register.add_product_order(): 
+                    if cash_register.add_product_order(): # If the product has been successfully added, return the cart list.
                         CashRegister.get_cart_list() 
                         CashRegister.get_cart_total()
 
-
-            if option == 3:                
+            if option == 3: # Show all products requested in the cart.               
                 CashRegister.get_cart_list()
                 CashRegister.get_cart_total() 
 
-
-            if option == 4:
+            if option == 4: # Remove a product of the cart.
                 product = input("Enter the id of the product that you remove:")
                 if ValidateInputs(product).check_input():
                     if CashRegister.remove_product(product_id=int(product)):
@@ -247,19 +237,16 @@ if __name__ == "__main__":
                     else:
                         print("Product not found.")
 
-
-
-            if option == 5:
-                
+            if option == 5: # Payment method.              
                 CashRegister.get_cart_list()
                 CashRegister.get_cart_total()
                 amount = input("Please enter the amount to pay:")                
-                if ValidateInputs(amount).check_input(): 
+                if ValidateInputs(amount).check_input(): # If the payment was successful, the program will shut down after 3 seconds.
                     if CashRegister.payment(int(amount)):
                         time.sleep(3)                        
                         start = False 
 
-            if option == 6:
+            if option == 6: # Exit the program.
                 start = False 
     
     
