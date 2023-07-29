@@ -14,7 +14,6 @@ class Library:
         cls.get_list_books().append(item)  
         return print(f"New book added: {item}")
 
-
     @classmethod
     def get_list_of_loans_made(cls):
         return cls.list_of_loans_made   
@@ -25,42 +24,85 @@ class Library:
 
 
 
-
     @classmethod
     def find_book(cls,book_id):
         list_books = cls.get_list_books()        
         book_found = list(filter(lambda i: i["id"] == book_id, list_books))      
 
-        if len(book_found) != 0:
-            return book_found[0]           
+        if len(book_found) != 0: return book_found[0]           
         return False          
 
 
     @classmethod
-    def lend_book(cls,book_id):
+    def lend_book(cls,book_id,user_id):
 
         book = cls.find_book(book_id) 
 
+        user = User.get_user(user_id)
+
+        if user == False : raise ValueError("User not found.") 
+
         if book is False : raise ValueError("Book not found.")  
-        if book['Availability'] == "False":
+        if book['availability'] == "False":
             raise ValueError("This book is not currently available.")  
 
-        # Update the availability to "False"
-        book['Availability'] = "False"
-
-        return_date       = datetime.date.today() + datetime.timedelta(days=14)
+        return_date  = datetime.date.today() + datetime.timedelta(days=14)
         
         # create dic 
         context = {}
-        context["Date"]   =  datetime.date.today().strftime("%Y-%m-%d")    
-        context["User"]   = None    
-        context["Book"]   = book['Title']
-        context["Author"] = book['Author'] 
-        context["Isbn"]   = book['Isbn']        
-        context["Return_date"] = return_date.strftime("%Y-%m-%d")  
-        context["Returned"] = False
+        context["date"]                 =  datetime.date.today().strftime("%Y-%m-%d")          
+        context["user_name"]            = user["name"]  
+        context["user_identification"]  = user["identification"]   
+        context["book"]                 = book['title']        
+        context["isbn"]                 = book['isbn']        
+        context["return_date"]          = return_date.strftime("%Y-%m-%d")  
+        context["returned"]             = False
 
-        return print(f"Borrowed Book: {context}")     
+        
+        # Update the availability to "False"
+        book['availability'] = "False"
+
+        cls.add_loan_made_it(context)
+
+        return print(f"Borrowed Book: {context}")  
+
+           
+    @classmethod
+    def return_book(cls,book_id,user_id):    
+        book = cls.find_book(book_id) 
+        user = User.get_user(user_id)
+
+        if user == False : raise ValueError("User not found.") 
+        if book is False : raise ValueError("Book not found.")  
+        
+        if book['availability'] == "True":
+            raise ValueError("This book has not been loaned out.") 
+
+        list_books_borrowed = cls.get_list_of_loans_made() 
+
+        book_retorned = list(filter(lambda i: i["user_identification"] == user["identification"] and i["isbn"] == book["isbn"], list_books_borrowed)) 
+
+        book_retorned = book_retorned[-1]
+
+        book_retorned["returned"] = True
+
+        # Update the availability to "False"
+        book['availability'] = "True"   
+
+        return print(f"Returned book: {book_retorned}")
+
+        
+
+
+
+    @classmethod
+    def get_list_users(cls):
+        return cls.list_user  
+
+    @classmethod
+    def add_list_user(cls,user):
+        cls.get_list_users().append(user)
+
 
 
 class Book(Library):
@@ -102,8 +144,8 @@ class Book(Library):
         if not value.isdigit():
             raise ValueError("ISBN must contain only digits.") 
 
-        booksID_list = list(map(lambda i: i["Isbn"], super().get_list_books()))             
-        if value in booksID_list:
+        book_id_list = list(map(lambda i: i["isbn"], super().get_list_books()))             
+        if value in book_id_list:
             raise ValueError(f"ISBN '{value}' already exists. ISBN must be unique for each book.")    
 
         self.__isbn = value  # Set the validated ISBN 
@@ -119,7 +161,7 @@ class Book(Library):
         isbn   = self.isbn
         status = self.get_availability()
 
-        return f"Title: {title}, Author: {author}, Genre: {genre}, ISBN: {isbn}, Availability: {status}"  
+        return f"title: {title}, author: {author}, genre: {genre}, isbn: {isbn}, availability: {status}"  
 
 
     def add_book(self):
@@ -129,18 +171,107 @@ class Book(Library):
         genre  = self.get_genre()
         isbn   = self.isbn
         status = self.get_availability()        
-        item = {"id":id,"Title":title,"Author":author,"Genre":genre,"Isbn":isbn,"Availability":status}
+        item = {"id":id,"title":title,"author":author,"genre":genre,"isbn":isbn,"availability":status}
         return super().add_book(item)            
-             
+
+
+
+class User(Library):
+    def __init__(self,name,identification,address):
+
+        if not name:  raise ValueError("Name must be provided for a user.")    
+        if not identification: raise ValueError("Identification must be provided for a user.")  
+        if not address:  raise ValueError("Address must be provided for a user.")   
+        
+        self.__name = name   
+        self.identification = identification     
+        self.__address = address        
+        self.__books_borrowed = []
+
+    def get_name(self):
+        return self.__name 
+
+    @property
+    def identification(self):
+        return self.__identification  
+
+    def get_address(self):
+        return self.__address 
+
+    def get_books_borrowed(self):
+        return self.__books_borrowed 
+
+
+    @identification.setter
+    def identification(self,value): 
+        if not value.isdigit():
+            raise ValueError("Identification must contain only digits.") 
+
+        user_id_list = list(map(lambda i: i["identification"], super().get_list_users()))             
+        if value in user_id_list:
+            raise ValueError(f"Identification '{value}' already exists. Identification must be unique for each user.")    
+
+        self.__identification = value  # Set the validated identification   
+
+    
+    def add_user(self):
+        user = {}
+
+        user["id"]             = len(self.get_list_users()) + 1
+        user["name"]           = self.get_name()
+        user["identification"] = self.identification
+        user["address"]        = self.get_address()    
+
+        self.add_list_user(user)
+        return print(f"New user added: {user}")
+
+
+    @classmethod
+    def get_user(cls,user_id):
+        list_user = cls.get_list_users()   
+        find_user = list(filter(lambda i: i["identification"] == user_id, list_user))
+        if len(find_user) != 0: return find_user[0]
+        return False    
+          
+
+    @classmethod
+    def get_user_books_borrowed(cls,user_id):
+        user = cls.get_user(user_id)  
+        if user == False : raise ValueError("User not found.")  
+
+        list_books_borrowed = cls.get_list_of_loans_made()
+        find_loans = list(filter(lambda i: i["user_identification"] == user["identification"], list_books_borrowed))
+        
+        if len(find_loans) == 0 : return print("It appears that the user has not borrowed any books.")
+
+        return find_loans
+
+
+     
+
+
+
+
+
+       
 
 
 
 try:
-    book  = Book("The Catcher in the Rye I", "J.D. Salinger", "Fiction", "978-0316769488","True").add_book()
-    book2 = Book("The Catcher in the Rye II", "J.D. Salinger", "Fiction", "978-0316769487","True").add_book()
-    book  = Book("The Catcher in the Rye III", "J.D. Salinger", "Fiction", "978-0316749488","True").add_book()
-    book2 = Book("The Catcher in the Rye IV", "J.D. Salinger", "Fiction", "978-0386769487","True").add_book()
-    Library.lend_book(3)    
+    book1  = Book("The Catcher in the Rye I", "J.D. Salinger", "Fiction", "978-0316769488","True").add_book()
+    book2  = Book("The Catcher in the Rye II", "J.D. Salinger", "Fiction", "978-0316769487","True").add_book()
+    book3  = Book("The Catcher in the Rye III", "J.D. Salinger", "Fiction", "978-0316749488","True").add_book()
+    book4  = Book("The Catcher in the Rye IV", "J.D. Salinger", "Fiction", "978-0386769487","True").add_book()
+
+    user1  = User("Albert Ferdinand I", "001", "742 Evergreen Terrace",).add_user()
+    user2  = User("Albert Ferdinand II", "002", "741 Evergreen Terrace",).add_user()
+    user1  = User("Albert Ferdinand III", "003", "740 Evergreen Terrace",).add_user()
+    
+    
+    Library.lend_book(3,"003")
+    Library.lend_book(1,"003")
+    Library.return_book(3,"003")    
+    
 except ValueError as e:
     print("ValueError:", e)    
 
